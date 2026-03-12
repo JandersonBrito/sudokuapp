@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../features/home/presentation/pages/home_page.dart';
+import '../../features/hello/presentation/pages/hello_world_page.dart';
 
 class AppRouter {
   AppRouter._();

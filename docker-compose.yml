@@ -1,0 +1,45 @@
+version: '3.9'
+
+services:
+  flutter_dev:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        FLUTTER_VERSION: 3.22.0
+    image: flutter_clean_app:latest
+    container_name: flutter_dev
+    volumes:
+      - .:/workspace
+      - flutter_pub_cache:/home/developer/.pub-cache
+      - flutter_gradle_cache:/home/developer/.gradle
+    ports:
+      - "8080:8080"
+      - "5037:5037"
+    environment:
+      - FLUTTER_ROOT=/opt/flutter
+      - ANDROID_HOME=/opt/android-sdk
+      - PUB_CACHE=/home/developer/.pub-cache
+    stdin_open: true
+    tty: true
+    working_dir: /workspace
+    command: ["tail", "-f", "/dev/null"]
+
+  flutter_web:
+    image: flutter_clean_app:latest
+    container_name: flutter_web
+    volumes:
+      - .:/workspace
+      - flutter_pub_cache:/home/developer/.pub-cache
+    ports:
+      - "8080:8080"
+    working_dir: /workspace
+    command: >
+      bash -c "flutter pub get && flutter run -d web-server
+      --web-port=8080 --web-hostname=0.0.0.0"
+    profiles:
+      - web
+
+volumes:
+  flutter_pub_cache:
+  flutter_gradle_cache:

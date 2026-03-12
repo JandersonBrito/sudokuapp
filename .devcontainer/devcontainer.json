@@ -1,0 +1,42 @@
+{
+  "name": "Flutter Clean Architecture",
+  "dockerComposeFile": "../docker-compose.yml",
+  "service": "flutter_dev",
+  "workspaceFolder": "/workspace",
+  "shutdownAction": "stopCompose",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "Dart-Code.flutter",
+        "Dart-Code.dart-code",
+        "felixangelov.bloc",
+        "nash.awesome-flutter-snippets",
+        "usernamehw.errorlens",
+        "eamodio.gitlens",
+        "PKief.material-icon-theme",
+        "aaron-bond.better-comments"
+      ],
+      "settings": {
+        "dart.flutterSdkPath": "/opt/flutter",
+        "editor.formatOnSave": true,
+        "editor.rulers": [80],
+        "dart.lineLength": 80,
+        "[dart]": {
+          "editor.defaultFormatter": "Dart-Code.dart-code",
+          "editor.formatOnSave": true,
+          "editor.tabCompletion": "onlySnippets",
+          "editor.wordBasedSuggestions": "off"
+        }
+      }
+    }
+  },
+  "forwardPorts": [8080],
+  "portsAttributes": {
+    "8080": {
+      "label": "Flutter Web",
+      "onAutoForward": "openBrowser"
+    }
+  },
+  "postCreateCommand": "flutter pub get",
+  "remoteUser": "developer"
+}

@@ -9,11 +9,26 @@ import '../../features/home/data/repositories/home_repository_impl.dart';
 import '../../features/home/domain/repositories/home_repository.dart';
 import '../../features/home/domain/usecases/get_items_usecase.dart';
 import '../../features/home/presentation/bloc/home_bloc.dart';
+import '../../features/auth/data/datasources/auth_remote_datasource.dart';
+import '../../features/auth/data/repositories/auth_repository_impl.dart';
+import '../../features/auth/domain/repositories/auth_repository.dart';
+import '../../features/auth/domain/usecases/login_usecase.dart';
+import '../../features/auth/presentation/bloc/login_bloc.dart';
+import '../../features/auth/presentation/bloc/auth_bloc.dart';
 
 final sl = GetIt.instance;
 
 Future<void> init() async {
+  sl.registerLazySingleton(() => AuthBloc());
   sl.registerFactory(() => HomeBloc(getItems: sl()));
+  sl.registerFactory(() => LoginBloc(loginUseCase: sl()));
+  sl.registerLazySingleton(() => LoginUseCase(sl()));
+  sl.registerLazySingleton<AuthRepository>(
+    () => AuthRepositoryImpl(remoteDataSource: sl()),
+  );
+  sl.registerLazySingleton<AuthRemoteDataSource>(
+    () => AuthRemoteDataSourceImpl(dioClient: sl()),
+  );
   sl.registerLazySingleton(() => GetItemsUseCase(sl()));
   sl.registerLazySingleton<HomeRepository>(
     () => HomeRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()),

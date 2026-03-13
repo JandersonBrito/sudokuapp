@@ -1,12 +1,19 @@
 import 'dart:math';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../../data/datasources/difficulty_progress_storage.dart';
+import '../../domain/entities/difficulty_progress.dart';
 import '../../domain/entities/sudoku_game.dart';
 import '../../domain/services/sudoku_generator.dart';
 import 'sudoku_event.dart';
 import 'sudoku_state.dart';
 
 class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
-  SudokuBloc() : super(const SudokuInitial()) {
+  final DifficultyProgressStorage _storage;
+
+  SudokuBloc({DifficultyProgressStorage? storage})
+      : _storage = storage ?? DifficultyProgressStorage(),
+        super(const SudokuInitial()) {
+    on<SudokuProgressLoaded>(_onProgressLoaded);
     on<SudokuStarted>(_onStarted);
     on<SudokuCellSelected>(_onCellSelected);
     on<SudokuNumberInput>(_onNumberInput);
@@ -15,10 +22,28 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     on<SudokuHintRequested>(_onHintRequested);
   }
 
+  DifficultyProgress _currentProgress() {
+    final s = state;
+    if (s is SudokuInitial) return s.progress;
+    if (s is SudokuInProgress) return s.progress;
+    if (s is SudokuCompleted) return s.progress;
+    if (s is SudokuGameOver) return s.progress;
+    return const DifficultyProgress();
+  }
+
+  Future<void> _onProgressLoaded(
+      SudokuProgressLoaded event, Emitter<SudokuState> emit) async {
+    final progress = await _storage.load();
+    emit(SudokuInitial(progress: progress));
+  }
+
   void _onStarted(SudokuStarted event, Emitter<SudokuState> emit) {
+    final progress = _currentProgress();
+    if (!progress.isUnlocked(event.difficulty)) return;
     final game = SudokuGenerator.generate(event.difficulty);
     emit(SudokuInProgress(
       game: game,
+      progress: progress,
       highlightedCells: _emptyGrid(false),
       errorCells: _emptyGrid(false),
     ));
@@ -60,9 +85,7 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
         .toList();
     newErrorCells[row][col] = !isCorrect;
 
-    // Consecutive correct streak
     final newStreak = isCorrect ? current.consecutiveCorrect + 1 : 0;
-    // Every 5 consecutive correct answers, earn 1 hint (max not capped)
     final earnedHint = isCorrect && newStreak % 5 == 0;
     final newHints = current.hintsAvailable + (earnedHint ? 1 : 0);
 
@@ -72,17 +95,23 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     );
 
     if (newMistakes >= 3 && !isCorrect) {
-      emit(SudokuGameOver(game: newGame));
+      emit(SudokuGameOver(game: newGame, progress: current.progress));
       return;
     }
 
     if (_isBoardComplete(newBoard, newGame.solution)) {
-      emit(SudokuCompleted(game: newGame, mistakes: newMistakes));
+      final newProgress =
+          current.progress.incrementCompletions(newGame.difficulty);
+      _storage.save(newProgress);
+      emit(SudokuCompleted(
+          game: newGame, mistakes: newMistakes, progress: newProgress));
       return;
     }
 
     final highlighted = _computeHighlights(newGame, row, col);
-    final completed = isCorrect ? _computeCompletedCells(newBoard, row, col) : _emptyGrid(false);
+    final completed = isCorrect
+        ? _computeCompletedCells(newBoard, row, col)
+        : _emptyGrid(false);
     emit(current.copyWith(
       game: newGame,
       selectedRow: row,
@@ -133,7 +162,6 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     final current = state as SudokuInProgress;
     if (current.hintsAvailable <= 0) return;
 
-    // Find all empty or wrong cells
     final emptyCells = <(int, int)>[];
     for (int r = 0; r < 9; r++) {
       for (int c = 0; c < 9; c++) {
@@ -146,7 +174,6 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
 
     if (emptyCells.isEmpty) return;
 
-    // Pick a random cell to reveal
     final pick = emptyCells[Random().nextInt(emptyCells.length)];
     final hintRow = pick.$1;
     final hintCol = pick.$2;
@@ -165,7 +192,13 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     final newGame = current.game.copyWith(board: newBoard);
 
     if (_isBoardComplete(newBoard, newGame.solution)) {
-      emit(SudokuCompleted(game: newGame, mistakes: newGame.mistakes));
+      final newProgress =
+          current.progress.incrementCompletions(newGame.difficulty);
+      _storage.save(newProgress);
+      emit(SudokuCompleted(
+          game: newGame,
+          mistakes: newGame.mistakes,
+          progress: newProgress));
       return;
     }
 
@@ -180,7 +213,7 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
   }
 
   void _onReset(SudokuReset event, Emitter<SudokuState> emit) {
-    emit(const SudokuInitial());
+    emit(SudokuInitial(progress: _currentProgress()));
   }
 
   List<List<bool>> _computeHighlights(SudokuGame game, int row, int col) {
@@ -204,16 +237,21 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     return highlighted;
   }
 
-  List<List<bool>> _computeCompletedCells(List<List<int>> board, int row, int col) {
+  List<List<bool>> _computeCompletedCells(
+      List<List<int>> board, int row, int col) {
     final result = _emptyGrid(false);
     bool rowComplete = board[row].every((v) => v != 0);
-    bool colComplete = List.generate(9, (r) => board[r][col]).every((v) => v != 0);
+    bool colComplete =
+        List.generate(9, (r) => board[r][col]).every((v) => v != 0);
     final boxRow = (row ~/ 3) * 3;
     final boxCol = (col ~/ 3) * 3;
     bool boxComplete = true;
     for (int r = boxRow; r < boxRow + 3; r++) {
       for (int c = boxCol; c < boxCol + 3; c++) {
-        if (board[r][c] == 0) { boxComplete = false; break; }
+        if (board[r][c] == 0) {
+          boxComplete = false;
+          break;
+        }
       }
       if (!boxComplete) break;
     }
@@ -224,7 +262,9 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
       for (int c = 0; c < 9; c++) {
         if (rowComplete && r == row) result[r][c] = true;
         if (colComplete && c == col) result[r][c] = true;
-        if (boxComplete && (r ~/ 3) == (row ~/ 3) && (c ~/ 3) == (col ~/ 3)) {
+        if (boxComplete &&
+            (r ~/ 3) == (row ~/ 3) &&
+            (c ~/ 3) == (col ~/ 3)) {
           result[r][c] = true;
         }
       }
@@ -232,7 +272,8 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     return result;
   }
 
-  bool _isBoardComplete(List<List<int>> board, List<List<int>> solution) {
+  bool _isBoardComplete(
+      List<List<int>> board, List<List<int>> solution) {
     for (int r = 0; r < 9; r++) {
       for (int c = 0; c < 9; c++) {
         if (board[r][c] != solution[r][c]) return false;

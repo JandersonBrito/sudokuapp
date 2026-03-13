@@ -6,10 +6,13 @@ import 'core/di/injection_container.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 import 'features/sudoku/presentation/bloc/sudoku_bloc.dart';
+import 'features/sudoku/presentation/bloc/sudoku_event.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await di.init();
+  // Load persisted difficulty progress before UI renders
+  sl<SudokuBloc>().add(const SudokuProgressLoaded());
   runApp(const MyApp());
 }
 

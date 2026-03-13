@@ -8,6 +8,11 @@ abstract class SudokuEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+/// Load persisted progress from storage (called on app start).
+class SudokuProgressLoaded extends SudokuEvent {
+  const SudokuProgressLoaded();
+}
+
 class SudokuStarted extends SudokuEvent {
   final SudokuDifficulty difficulty;
 

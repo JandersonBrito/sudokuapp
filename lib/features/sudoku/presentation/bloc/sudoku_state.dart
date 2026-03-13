@@ -1,5 +1,6 @@
 import 'package:equatable/equatable.dart';
 import '../../domain/entities/sudoku_game.dart';
+import '../../domain/entities/difficulty_progress.dart';
 
 abstract class SudokuState extends Equatable {
   const SudokuState();
@@ -9,11 +10,17 @@ abstract class SudokuState extends Equatable {
 }
 
 class SudokuInitial extends SudokuState {
-  const SudokuInitial();
+  final DifficultyProgress progress;
+
+  const SudokuInitial({this.progress = const DifficultyProgress()});
+
+  @override
+  List<Object?> get props => [progress];
 }
 
 class SudokuInProgress extends SudokuState {
   final SudokuGame game;
+  final DifficultyProgress progress;
   final int? selectedRow;
   final int? selectedCol;
   final List<List<bool>> highlightedCells;
@@ -27,6 +34,7 @@ class SudokuInProgress extends SudokuState {
 
   const SudokuInProgress({
     required this.game,
+    required this.progress,
     this.selectedRow,
     this.selectedCol,
     required this.highlightedCells,
@@ -40,6 +48,7 @@ class SudokuInProgress extends SudokuState {
 
   SudokuInProgress copyWith({
     SudokuGame? game,
+    DifficultyProgress? progress,
     int? selectedRow,
     int? selectedCol,
     List<List<bool>>? highlightedCells,
@@ -53,6 +62,7 @@ class SudokuInProgress extends SudokuState {
   }) {
     return SudokuInProgress(
       game: game ?? this.game,
+      progress: progress ?? this.progress,
       selectedRow: selectedRow ?? this.selectedRow,
       selectedCol: selectedCol ?? this.selectedCol,
       highlightedCells: highlightedCells ?? this.highlightedCells,
@@ -68,6 +78,7 @@ class SudokuInProgress extends SudokuState {
   @override
   List<Object?> get props => [
         game,
+        progress,
         selectedRow,
         selectedCol,
         highlightedCells,
@@ -83,18 +94,24 @@ class SudokuInProgress extends SudokuState {
 class SudokuCompleted extends SudokuState {
   final SudokuGame game;
   final int mistakes;
+  final DifficultyProgress progress;
 
-  const SudokuCompleted({required this.game, required this.mistakes});
+  const SudokuCompleted({
+    required this.game,
+    required this.mistakes,
+    required this.progress,
+  });
 
   @override
-  List<Object?> get props => [game, mistakes];
+  List<Object?> get props => [game, mistakes, progress];
 }
 
 class SudokuGameOver extends SudokuState {
   final SudokuGame game;
+  final DifficultyProgress progress;
 
-  const SudokuGameOver({required this.game});
+  const SudokuGameOver({required this.game, required this.progress});
 
   @override
-  List<Object?> get props => [game];
+  List<Object?> get props => [game, progress];
 }

@@ -158,7 +158,7 @@ class SudokuGamePage extends StatelessWidget {
         backgroundColor: AppColors.background,
         title: Text(difficulty),
       ),
-      body: const Center(child: CircularProgressIndicator()),
+      body: const Center(child: CircularProgressIndicator(color: AppColors.neonPurple)),
     );
   }
 

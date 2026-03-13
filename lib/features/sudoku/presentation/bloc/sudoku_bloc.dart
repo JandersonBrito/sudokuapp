@@ -134,6 +134,10 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     if (row == null || col == null) return;
     if (current.game.isFixed[row][col]) return;
 
+    // Do not allow erasing a correctly placed number
+    final currentValue = current.game.board[row][col];
+    if (currentValue != 0 && currentValue == current.game.solution[row][col]) return;
+
     final newBoard = current.game.board
         .map((r) => List<int>.from(r))
         .toList();

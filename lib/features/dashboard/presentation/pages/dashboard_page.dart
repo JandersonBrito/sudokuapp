@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:go_router/go_router.dart';
-import '../../../../core/di/injection_container.dart';
 import '../../../auth/presentation/bloc/auth_bloc.dart';
 
 class DashboardPage extends StatelessWidget {
@@ -20,8 +19,7 @@ class DashboardPage extends StatelessWidget {
             icon: const Icon(Icons.logout),
             tooltip: 'Sair',
             onPressed: () {
-              sl<AuthBloc>().add(const AuthLoggedOut());
-              context.go('/login');
+              context.read<AuthBloc>().add(const AuthLoggedOut());
             },
           ),
         ],

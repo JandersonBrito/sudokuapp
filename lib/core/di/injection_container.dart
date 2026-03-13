@@ -2,6 +2,8 @@ import 'package:get_it/get_it.dart';
 import 'package:dio/dio.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../auth/auth_interceptor.dart';
+import '../auth/token_storage.dart';
 import '../network/dio_client.dart';
 import '../../features/home/data/datasources/home_remote_datasource.dart';
 import '../../features/home/data/datasources/home_local_datasource.dart';
@@ -19,16 +21,45 @@ import '../../features/auth/presentation/bloc/auth_bloc.dart';
 final sl = GetIt.instance;
 
 Future<void> init() async {
-  sl.registerLazySingleton(() => AuthBloc());
-  sl.registerFactory(() => HomeBloc(getItems: sl()));
-  sl.registerFactory(() => LoginBloc(loginUseCase: sl()));
-  sl.registerLazySingleton(() => LoginUseCase(sl()));
+  final prefs = await SharedPreferences.getInstance();
+  sl.registerLazySingleton(() => prefs);
+
+  // Token storage
+  sl.registerLazySingleton(() => TokenStorage(sl()));
+
+  // Dio + interceptors
+  final dio = Dio(BaseOptions(
+    baseUrl: const String.fromEnvironment(
+      'API_BASE_URL',
+      defaultValue: 'https://api.example.com',
+    ),
+    connectTimeout: const Duration(seconds: 10),
+    receiveTimeout: const Duration(seconds: 10),
+  ));
+  sl.registerLazySingleton(() => dio);
+  sl.registerLazySingleton(
+    () => AuthInterceptor(tokenStorage: sl(), dio: sl()),
+  );
+  sl.registerLazySingleton(() {
+    final client = DioClient(sl());
+    dio.interceptors.add(sl<AuthInterceptor>());
+    return client;
+  });
+
+  // Auth
+  sl.registerLazySingleton<AuthRemoteDataSource>(
+    () => AuthRemoteDataSourceImpl(dioClient: sl(), tokenStorage: sl()),
+  );
   sl.registerLazySingleton<AuthRepository>(
     () => AuthRepositoryImpl(remoteDataSource: sl()),
   );
-  sl.registerLazySingleton<AuthRemoteDataSource>(
-    () => AuthRemoteDataSourceImpl(dioClient: sl()),
+  sl.registerLazySingleton(() => LoginUseCase(sl()));
+  sl.registerLazySingleton(
+    () => AuthBloc(authRepository: sl(), tokenStorage: sl()),
   );
+  sl.registerFactory(() => LoginBloc(loginUseCase: sl()));
+
+  // Home
   sl.registerLazySingleton(() => GetItemsUseCase(sl()));
   sl.registerLazySingleton<HomeRepository>(
     () => HomeRepositoryImpl(remoteDataSource: sl(), localDataSource: sl()),
@@ -39,15 +70,5 @@ Future<void> init() async {
   sl.registerLazySingleton<HomeLocalDataSource>(
     () => HomeLocalDataSourceImpl(prefs: sl()),
   );
-  sl.registerLazySingleton(() => DioClient(sl()));
-  sl.registerLazySingleton(() => Dio(BaseOptions(
-    baseUrl: const String.fromEnvironment(
-      'API_BASE_URL',
-      defaultValue: 'https://api.example.com',
-    ),
-    connectTimeout: const Duration(seconds: 10),
-    receiveTimeout: const Duration(seconds: 10),
-  )));
-  final prefs = await SharedPreferences.getInstance();
-  sl.registerLazySingleton(() => prefs);
+  sl.registerFactory(() => HomeBloc(getItems: sl()));
 }

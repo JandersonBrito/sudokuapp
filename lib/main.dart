@@ -10,6 +10,7 @@ import 'features/auth/presentation/bloc/auth_bloc.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await di.init();
+  sl<AuthBloc>().add(const AuthStarted());
   runApp(const MyApp());
 }
 

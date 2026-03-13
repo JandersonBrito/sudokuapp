@@ -4,18 +4,21 @@ class UserModel extends User {
   const UserModel({
     required super.id,
     required super.email,
-    required super.token,
+    required super.accessToken,
+    required super.refreshToken,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
         id: json['id'] as String,
         email: json['email'] as String,
-        token: json['token'] as String,
+        accessToken: json['access_token'] as String,
+        refreshToken: json['refresh_token'] as String,
       );
 
   Map<String, dynamic> toJson() => {
         'id': id,
         'email': email,
-        'token': token,
+        'access_token': accessToken,
+        'refresh_token': refreshToken,
       };
 }

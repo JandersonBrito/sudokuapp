@@ -24,4 +24,7 @@ class AuthRepositoryImpl implements AuthRepository {
       return Left(UnexpectedFailure(message: e.toString()));
     }
   }
+
+  @override
+  Future<void> logout() => remoteDataSource.logout();
 }

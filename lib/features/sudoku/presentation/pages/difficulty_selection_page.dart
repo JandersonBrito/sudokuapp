@@ -22,7 +22,7 @@ class DifficultySelectionPage extends StatelessWidget {
           ),
         ),
         child: SafeArea(
-          child: Padding(
+          child: SingleChildScrollView(
             padding: const EdgeInsets.all(24),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -75,33 +75,32 @@ class DifficultySelectionPage extends StatelessWidget {
                     letterSpacing: 4,
                   ),
                 ),
-                const SizedBox(height: 48),
-                Expanded(
-                  child: BlocBuilder<SudokuBloc, SudokuState>(
-                    builder: (context, state) {
-                      final progress = state is SudokuInitial
-                          ? state.progress
-                          : state is SudokuInProgress
-                              ? state.progress
-                              : state is SudokuCompleted
-                                  ? state.progress
-                                  : state is SudokuGameOver
-                                      ? state.progress
-                                      : null;
+                const SizedBox(height: 32),
+                BlocBuilder<SudokuBloc, SudokuState>(
+                  builder: (context, state) {
+                    final progress = state is SudokuInitial
+                        ? state.progress
+                        : state is SudokuInProgress
+                            ? state.progress
+                            : state is SudokuCompleted
+                                ? state.progress
+                                : state is SudokuGameOver
+                                    ? state.progress
+                                    : null;
 
-                      return Column(
-                        children: SudokuDifficulty.values
-                            .map((d) => _DifficultyCard(
-                                  difficulty: d,
-                                  unlocked: progress?.isUnlocked(d) ?? d == SudokuDifficulty.veryEasy,
-                                  currentCount: progress?.currentCompletions(d) ?? 0,
-                                  requiredCount: progress?.requiredCompletions(d) ?? 0,
-                                  prerequisite: progress?.prerequisite(d),
-                                ))
-                            .toList(),
-                      );
-                    },
-                  ),
+                    return Column(
+                      children: SudokuDifficulty.values
+                          .map((d) => _DifficultyCard(
+                                difficulty: d,
+                                unlocked: progress?.isUnlocked(d) ??
+                                    d == SudokuDifficulty.veryEasy,
+                                currentCount: progress?.currentCompletions(d) ?? 0,
+                                requiredCount: progress?.requiredCompletions(d) ?? 0,
+                                prerequisite: progress?.prerequisite(d),
+                              ))
+                          .toList(),
+                    );
+                  },
                 ),
               ],
             ),
@@ -169,9 +168,10 @@ class _DifficultyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final color = unlocked ? _neonColor() : AppColors.textSecondary;
 
-    return Expanded(
-      child: Padding(
-        padding: const EdgeInsets.only(bottom: 10),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: SizedBox(
+        height: 72,
         child: GestureDetector(
           onTap: unlocked
               ? () {

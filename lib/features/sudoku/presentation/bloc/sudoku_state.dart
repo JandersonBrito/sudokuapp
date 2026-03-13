@@ -22,6 +22,8 @@ class SudokuInProgress extends SudokuState {
   final int consecutiveCorrect;
   final int? hintRow;
   final int? hintCol;
+  // Cells that just completed a line/col/box (for flash animation)
+  final List<List<bool>> completedCells;
 
   const SudokuInProgress({
     required this.game,
@@ -33,6 +35,7 @@ class SudokuInProgress extends SudokuState {
     this.consecutiveCorrect = 0,
     this.hintRow,
     this.hintCol,
+    this.completedCells = const [],
   });
 
   SudokuInProgress copyWith({
@@ -46,6 +49,7 @@ class SudokuInProgress extends SudokuState {
     int? hintRow,
     int? hintCol,
     bool clearHint = false,
+    List<List<bool>>? completedCells,
   }) {
     return SudokuInProgress(
       game: game ?? this.game,
@@ -57,6 +61,7 @@ class SudokuInProgress extends SudokuState {
       consecutiveCorrect: consecutiveCorrect ?? this.consecutiveCorrect,
       hintRow: clearHint ? null : (hintRow ?? this.hintRow),
       hintCol: clearHint ? null : (hintCol ?? this.hintCol),
+      completedCells: completedCells ?? this.completedCells,
     );
   }
 
@@ -71,6 +76,7 @@ class SudokuInProgress extends SudokuState {
         consecutiveCorrect,
         hintRow,
         hintCol,
+        completedCells,
       ];
 }
 

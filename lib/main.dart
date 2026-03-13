@@ -23,9 +23,9 @@ class MyApp extends StatelessWidget {
       child: MaterialApp.router(
         title: 'Sudoku',
         debugShowCheckedModeBanner: false,
-        theme: AppTheme.lightTheme,
+        theme: AppTheme.darkTheme,
         darkTheme: AppTheme.darkTheme,
-        themeMode: ThemeMode.system,
+        themeMode: ThemeMode.dark,
         routerConfig: AppRouter.router,
       ),
     );

@@ -34,6 +34,7 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
       selectedCol: event.col,
       highlightedCells: highlighted,
       clearHint: true,
+      completedCells: _emptyGrid(false),
     ));
   }
 
@@ -81,6 +82,7 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     }
 
     final highlighted = _computeHighlights(newGame, row, col);
+    final completed = isCorrect ? _computeCompletedCells(newBoard, row, col) : _emptyGrid(false);
     emit(current.copyWith(
       game: newGame,
       selectedRow: row,
@@ -90,6 +92,7 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
       hintsAvailable: newHints,
       consecutiveCorrect: newStreak,
       clearHint: true,
+      completedCells: completed,
     ));
   }
 
@@ -199,6 +202,34 @@ class SudokuBloc extends Bloc<SudokuEvent, SudokuState> {
     }
 
     return highlighted;
+  }
+
+  List<List<bool>> _computeCompletedCells(List<List<int>> board, int row, int col) {
+    final result = _emptyGrid(false);
+    bool rowComplete = board[row].every((v) => v != 0);
+    bool colComplete = List.generate(9, (r) => board[r][col]).every((v) => v != 0);
+    final boxRow = (row ~/ 3) * 3;
+    final boxCol = (col ~/ 3) * 3;
+    bool boxComplete = true;
+    for (int r = boxRow; r < boxRow + 3; r++) {
+      for (int c = boxCol; c < boxCol + 3; c++) {
+        if (board[r][c] == 0) { boxComplete = false; break; }
+      }
+      if (!boxComplete) break;
+    }
+
+    if (!rowComplete && !colComplete && !boxComplete) return result;
+
+    for (int r = 0; r < 9; r++) {
+      for (int c = 0; c < 9; c++) {
+        if (rowComplete && r == row) result[r][c] = true;
+        if (colComplete && c == col) result[r][c] = true;
+        if (boxComplete && (r ~/ 3) == (row ~/ 3) && (c ~/ 3) == (col ~/ 3)) {
+          result[r][c] = true;
+        }
+      }
+    }
+    return result;
   }
 
   bool _isBoardComplete(List<List<int>> board, List<List<int>> solution) {
